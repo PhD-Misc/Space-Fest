@@ -139,6 +139,8 @@ cp *.npy ${datadir}/${norad}
 cp 6S*.fits ${datadir}/${norad}
 cp *.csv ${datadir}/${norad}
 cp *.png ${datadir}/${norad}
+#cp *dirty.fits ${datadir}/${norad}
+
 
 end=`date +%s`
 runtime=$((end-start))

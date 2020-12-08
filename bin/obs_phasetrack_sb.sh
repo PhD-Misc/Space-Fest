@@ -62,7 +62,7 @@ cat ${base}bin/phaseTrack_sb.sh | sed -e "s:OBSNUM:${obsnum}:g" \
                                 -e "s:BASE:${base}:g" > ${script}
 output="${base}queue/logs/phaseTrack_sb_${obsnum}.o%A"
 error="${base}queue/logs/phaseTrack_sb_${obsnum}.e%A"
-sub="sbatch --begin=now+15 --output=${output} --error=${error} ${depend} -M ${cluster} -A ${project} ${script}"
+sub="sbatch --begin=now+15 --output=${output} --error=${error} ${depend} -J ShiftStack${norad} -M ${cluster} -A ${project} ${script}"
 jobid=($(${sub}))
 jobid=${jobid[3]}
 

@@ -5,7 +5,6 @@
 #SBATCH --ntasks=28
 #SBATCH --mem=124GB
 #SBATCH --tmp=890GB
-#SBATCH -J phaseTrack
 #SBATCH --mail-type FAIL,TIME_LIMIT,TIME_LIMIT_90
 #SBATCH --mail-user sirmcmissile47@gmail.com
 
@@ -19,7 +18,8 @@ b1name="068-079"
 b2name="107-108"
 b3name="112-114"
 b4name="147-153"
-
+img_size=200
+img_scale="5amin"
 set -x
 {
 
@@ -47,11 +47,11 @@ cd /nvmetmp
 
 ### run track.py
 cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --searchRadius 25
+myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} 
 
 ### make images along phase
 tarray=
-while IFS=, read -r col1 col2 col3 col4
+while IFS=, read -r col1 col2 col3 col4 col5
 do
     ah=$((col1))
     bh=$((ah+1))
@@ -63,12 +63,12 @@ do
     chgcentre ${obsnum}${b1name}.ms ${col2} ${col3}
 
     mkdir Head
-    wsclean -name ${obsnum}${b1name}-2m-${col1}h -size 100 100 -scale 5amin -interval ${ah} ${bh} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Head -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b1name}.ms &
+    wsclean -name ${obsnum}${b1name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b1name}.ms &
 
     PID1=$!
 
     mkdir Tail
-    wsclean -name ${obsnum}${b1name}-2m-${col1}t -size 100 100 -scale 5amin -interval ${at} ${bt} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Tail -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b1name}.ms & 
+    wsclean -name ${obsnum}${b1name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b1name}.ms & 
 
     PID2=$!
 
@@ -97,7 +97,7 @@ do
         wait -n $(jobs -p)
     done
 
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b1name} --freqChannels 384 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize 100 --timeStep ${col1} &
+    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b1name} --freqChannels 384 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
 
 done  
 #done < ${obsnum}-${norad}.csv
@@ -134,6 +134,13 @@ cp *.npy ${datadir}/${norad}/fm
 cp 6S*.fits ${datadir}/${norad}/fm
 cp *.csv ${datadir}/${norad}/fm
 cp *.png ${datadir}/${norad}/fm
+
+for ((i = 0 ; i < 10 ; i ++ ));
+do
+    cp *${i}-dirty.fits ${datadir}/${norad}/fm
+done
+
+
 rm -r *
 
 #### end of fm band run
@@ -146,11 +153,11 @@ cd /nvmetmp
 
 ### run track.py
 cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --searchRadius 25
+myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### make images along phase
 tarray=
-while IFS=, read -r col1 col2 col3 col4
+while IFS=, read -r col1 col2 col3 col4 col5
 do
     ah=$((col1))
     bh=$((ah+1))
@@ -162,12 +169,12 @@ do
     chgcentre ${obsnum}${b2name}.ms ${col2} ${col3}
 
     mkdir Head
-    wsclean -name ${obsnum}${b2name}-2m-${col1}h -size 100 100 -scale 5amin -interval ${ah} ${bh} -channels-out 64 -weight natural -abs-mem 40 -temp-dir Head -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b2name}.ms &
+    wsclean -name ${obsnum}${b2name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 64 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b2name}.ms &
 
     PID1=$!
 
     mkdir Tail
-    wsclean -name ${obsnum}${b2name}-2m-${col1}t -size 100 100 -scale 5amin -interval ${at} ${bt} -channels-out 64 -weight natural -abs-mem 40 -temp-dir Tail -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b2name}.ms & 
+    wsclean -name ${obsnum}${b2name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 64 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b2name}.ms & 
 
     PID2=$!
 
@@ -196,7 +203,7 @@ do
     do
         wait -n $(jobs -p)
     done
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b2name} --freqChannels 64 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize 100 --timeStep ${col1} &
+    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b2name} --freqChannels 64 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
    
 done
 
@@ -244,11 +251,11 @@ cd /nvmetmp
 
 ### run track.py
 cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --searchRadius 25
+myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### make images along phase
 tarray=
-while IFS=, read -r col1 col2 col3 col4
+while IFS=, read -r col1 col2 col3 col4 col5
 do
     ah=$((col1))
     bh=$((ah+1))
@@ -260,12 +267,12 @@ do
     chgcentre ${obsnum}${b3name}.ms ${col2} ${col3}
 
     mkdir Head
-    wsclean -name ${obsnum}${b3name}-2m-${col1}h -size 100 100 -scale 5amin -interval ${ah} ${bh} -channels-out 96 -weight natural -abs-mem 40 -temp-dir Head -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b3name}.ms &
+    wsclean -name ${obsnum}${b3name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 96 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b3name}.ms &
 
     PID1=$!
 
     mkdir Tail
-    wsclean -name ${obsnum}${b3name}-2m-${col1}t -size 100 100 -scale 5amin -interval ${at} ${bt} -channels-out 96 -weight natural -abs-mem 40 -temp-dir Tail -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b3name}.ms & 
+    wsclean -name ${obsnum}${b3name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 96 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b3name}.ms & 
 
     PID2=$!
 
@@ -294,7 +301,7 @@ do
         wait -n $(jobs -p)
     done
 
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b3name} --freqChannels 96 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize 100 --timeStep ${col1} &
+    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b3name} --freqChannels 96 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
    
 done
 
@@ -342,11 +349,11 @@ cd /nvmetmp
 
 ### run track.py
 cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --searchRadius 25
+myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### make images along phase
 tarray=
-while IFS=, read -r col1 col2 col3 col4
+while IFS=, read -r col1 col2 col3 col4 col5
 do
     ah=$((col1))
     bh=$((ah+1))
@@ -358,12 +365,12 @@ do
     chgcentre ${obsnum}${b4name}.ms ${col2} ${col3}
 
     mkdir Head
-    wsclean -name ${obsnum}${b4name}-2m-${col1}h -size 100 100 -scale 5amin -interval ${ah} ${bh} -channels-out 1 -weight natural -abs-mem 40 -temp-dir Head -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b4name}.ms &
+    wsclean -name ${obsnum}${b4name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 1 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b4name}.ms &
 
     PID1=$!
 
     mkdir Tail
-    wsclean -name ${obsnum}${b4name}-2m-${col1}t -size 100 100 -scale 5amin -interval ${at} ${bt} -channels-out 1 -weight natural -abs-mem 40 -temp-dir Tail -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}${b4name}.ms & 
+    wsclean -name ${obsnum}${b4name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 1 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b4name}.ms & 
 
     PID2=$!
 
@@ -392,7 +399,7 @@ do
         wait -n $(jobs -p)
     done
 
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b4name} --freqChannels 1 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize 100 --timeStep ${col1} &
+    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b4name} --freqChannels 1 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
    
 done
 
