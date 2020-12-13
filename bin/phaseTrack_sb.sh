@@ -125,8 +125,9 @@ cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
 myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
 
 ### make cube
-cp /home/sprabu/customPython/makeCube.py /nvmetmp 
-myPython ./makeCube.py --obs ${obsnum} --band ${b1name} --noradid ${norad} --channels 384
+cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
+myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b1name} --noradid ${norad} --channels 384 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
+
 
 ### copy data over back to /astro
 mkdir ${datadir}/${norad}/fm
@@ -135,10 +136,10 @@ cp 6S*.fits ${datadir}/${norad}/fm
 cp *.csv ${datadir}/${norad}/fm
 cp *.png ${datadir}/${norad}/fm
 
-for ((i = 0 ; i < 10 ; i ++ ));
-do
-    cp *${i}-dirty.fits ${datadir}/${norad}/fm
-done
+#for ((i = 0 ; i < 10 ; i ++ ));
+#do
+#    cp *${i}-dirty.fits ${datadir}/${norad}/fm
+#done
 
 
 rm -r *
@@ -230,8 +231,8 @@ cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
 myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
 
 ### make cube
-cp /home/sprabu/customPython/makeCube.py /nvmetmp 
-myPython ./makeCube.py --obs ${obsnum} --band ${b2name} --noradid ${norad} --channels 64
+cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
+myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b2name} --noradid ${norad} --channels 64 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### copy data over back to /astro
 mkdir ${datadir}/${norad}/orb
@@ -328,8 +329,8 @@ cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
 myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
 
 ### make cube
-cp /home/sprabu/customPython/makeCube.py /nvmetmp 
-myPython ./makeCube.py --obs ${obsnum} --band ${b3name} --noradid ${norad} --channels 96
+cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
+myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b3name} --noradid ${norad} --channels 96 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### copy data over back to /astro
 mkdir ${datadir}/${norad}/dl
@@ -426,8 +427,8 @@ cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
 myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
 
 ### make cube
-cp /home/sprabu/customPython/makeCube.py /nvmetmp 
-myPython ./makeCube.py --obs ${obsnum} --band ${b4name} --noradid ${norad} --channels 96
+cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
+myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b4name} --noradid ${norad} --channels 96 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### copy data over back to /astro
 mkdir ${datadir}/${norad}/dtv
