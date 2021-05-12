@@ -20,7 +20,7 @@ set -x
 
 obsnum=OBSNUM
 base=BASE
-timeSteps=
+timeSteps=55
 channels=768
 
 while getopts 't:' OPTION
@@ -53,7 +53,7 @@ do
 		name=`printf %04d $f`
 		wsclean -quiet -name ${obsnum}-2m-${i}-${name} -size 1400 1400 -temp-dir temp_${g}_${f} \
 		-abs-mem 5 -interval ${i} ${j} -channel-range ${f1} ${f2} -weight natural -scale 2.5amin\
-		-maxuvw-m 1212 -use-wgridder ${obsnum}.ms &
+		 -use-wgridder ${obsnum}.ms &
 
 
 	done

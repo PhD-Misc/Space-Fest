@@ -1,7 +1,7 @@
 #! /bin/bash -l
 #SBATCH --export=NONE
 #SBATCH -p workq
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #SBATCH --ntasks=148
 #SBATCH --mem=360GB
 #SBATCH -J lrimage
@@ -10,8 +10,9 @@
 
 start=`date +%s`
 
-source /group/mwa/software/module-reset.sh
 module load singularity
+shopt -s expand_aliases
+source /astro/mwasci/sprabu/aliases
 
 set -x
 {
@@ -49,7 +50,7 @@ do
         done
         mkdir temp_${g}_${f1}
         name=`printf %04d $f`
-        singularity exec  /pawsey/mwa/singularity/wsclean/wsclean_2.9.2.img wsclean -quiet \
+        wsclean -quiet \
                     -name ${obsnum}-fm-${i}-${name} -size 1400 1400 -temp-dir temp_${g}_${f1} \
                     -abs-mem 5 -interval ${i} ${j} -channel-range ${f1} ${f2}\
                     -weight natural -scale 2.5amin -maxuvw-m 800 -use-wgridder ${obsnum}068-083.ms &

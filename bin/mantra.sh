@@ -1,7 +1,7 @@
 #! /bin/bash -l
 #SBATCH --export=NONE
 #SBATCH -p workq
-#SBATCH --time=24:00:00
+#SBATCH --time=12:00:00
 #SBATCH --ntasks=6
 #SBATCH --mem=8GB
 #SBATCH -J mantra
@@ -38,10 +38,10 @@ unzip -n ${outfile}
 rm ${outfile}
 
 ## rename the measurement sets
-mv ${obsnum}_068-079.ms ${obsnum}068-079.ms
-mv ${obsnum}_112-114.ms ${obsnum}112-114.ms
-mv ${obsnum}_107-108.ms ${obsnum}107-108.ms
-mv ${obsnum}_147-153.ms ${obsnum}147-153.ms
+#mv ${obsnum}_068-079.ms ${obsnum}068-079.ms
+#mv ${obsnum}_112-114.ms ${obsnum}112-114.ms
+#mv ${obsnum}_107-108.ms ${obsnum}107-108.ms
+#mv ${obsnum}_147-153.ms ${obsnum}147-153.ms
 
 
 }

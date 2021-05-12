@@ -2,7 +2,7 @@
 
 usage()
 {
-echo "phasetrack.sh [-o obsnum] [-m cluster] [-a account] [-d dependancy] [-n norad]
+echo "custom.sh [-o obsnum] [-m cluster] [-a account] [-d dependancy] [-n norad]
         -m cluster              : the hpc cluster to process data in, default=garrawarla
         -a account              : the project id, default=mwasci
         -n norad                : the norad id
@@ -41,7 +41,6 @@ do
     esac
 done
 
-
 # if obsid is empty then just pring help
 if [[ -z ${obsnum} ]]
 then
@@ -55,14 +54,13 @@ fi
 
 
 base=/astro/mwasci/sprabu/satellites/Space-Fest/
-
-script="${base}queue/phaseTrack_${obsnum}.sh"
-cat ${base}bin/phaseTrack.sh | sed -e "s:OBSNUM:${obsnum}:g" \
+script="${base}queue/custom_${obsnum}.sh"
+cat ${base}bin/custom.sh | sed -e "s:OBSNUM:${obsnum}:g" \
                                 -e "s:NORAD:${norad}:g" \
                                 -e "s:BASE:${base}:g" > ${script}
-output="${base}queue/logs/phaseTrack_${obsnum}.o%A"
-error="${base}queue/logs/phaseTrack_${obsnum}.e%A"
-sub="sbatch --begin=now+15 --output=${output} --error=${error} ${depend} -J ShiftStack${norad} -M ${cluster} -A ${project} ${script}"
+output="${base}queue/logs/custom_${obsnum}.o%A"
+error="${base}queue/logs/custom_${obsnum}.e%A"
+sub="sbatch --begin=now+15 --output=${output} --error=${error} ${depend} -J Shift-stack-${norad} -M ${cluster} -A ${project} ${script}"
 jobid=($(${sub}))
 jobid=${jobid[3]}
 
@@ -70,7 +68,7 @@ jobid=${jobid[3]}
 error=`echo ${error} | sed "s/%A/${jobid}/"`
 output=`echo ${output} | sed "s/%A/${jobid}/"`
 
-echo "Submitted phaseTrack job as ${jobid}"
+echo "Submitted custom job as ${jobid}"
 
 
 

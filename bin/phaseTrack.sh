@@ -1,13 +1,13 @@
 #!/bin/bash -l
 #SBATCH --export=NONE
 #SBATCH -p workq
-#SBATCH --time=12:00:00
-#SBATCH --ntasks=28
+#SBATCH --time=6:00:00
+#SBATCH --ntasks=20
 #SBATCH --mem=124GB
-#SBATCH --tmp=890GB
-#SBATCH -J phaseTrack
+#SBATCH --tmp=450GB
 #SBATCH --mail-type FAIL,TIME_LIMIT,TIME_LIMIT_90
 #SBATCH --mail-user sirmcmissile47@gmail.com
+
 
 
 start=`date +%s`
@@ -38,12 +38,13 @@ cp ${obsnum}.metafits /nvmetmp
 cd /nvmetmp
 
 ### run track.py
-cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
+cp /astro/mwasci/sprabu/path/PawseyPathFiles/track.py /nvmetmp
+cp /astro/mwasci/sprabu/satellites/Space-Fest/tle/${norad}${obsnum}.txt /nvmetmp
+myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --debug True
 
 ### make images along phase
 tarray=
-while IFS=, read -r col1 col2 col3 col4
+while IFS=, read -r col1 col2 col3 col4 col5 col6
 do
     ah=$((col1))
     bh=$((ah+1))
@@ -55,12 +56,12 @@ do
     chgcentre ${obsnum}.ms ${col2} ${col3}
 
     mkdir Head
-    wsclean -name ${obsnum}-2m-${col1}h -size 100 100 -scale 5amin -interval ${ah} ${bh} -channels-out 768 -weight natural -abs-mem 40 -temp-dir Head -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}.ms &
+    wsclean -name ${obsnum}-2m-${col1}h -size 200 200 -scale 5amin -interval ${ah} ${bh} -channels-out 768 -weight natural -abs-mem 40 -temp-dir Head -quiet -maxuvw-m ${col4} -use-wgridder ${obsnum}.ms &
 
     PID1=$!
 
     mkdir Tail
-    wsclean -name ${obsnum}-2m-${col1}t -size 100 100 -scale 5amin -interval ${at} ${bt} -channels-out 768 -weight natural -abs-mem 40 -temp-dir Tail -quiet -maxuvw-m 1212 -use-wgridder ${obsnum}.ms & 
+    wsclean -name ${obsnum}-2m-${col1}t -size 200 200 -scale 5amin -interval ${at} ${bt} -channels-out 768 -weight natural -abs-mem 40 -temp-dir Tail -quiet -maxuvw-m ${col4} -use-wgridder ${obsnum}.ms & 
 
     PID2=$!
 
@@ -83,7 +84,7 @@ do
     do
         wait -n $(jobs -p)
     done
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum} --freqChannels 768 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize 100 --timeStep ${col1} &
+    python_rfi ./RFISeekerSpaceFest --obs ${obsnum} --freqChannels 768 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize 200 --timeStep ${col1} &
 
 done
 
@@ -127,18 +128,23 @@ for i in "${tarray[@]}"; do
   (( i > max )) && max=$i
   (( i < min )) && min=$i
 done
-cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
+cp /astro/mwasci/sprabu/path/PawseyPathFiles/TrackTimeLapse.py /nvmetmp
 myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill
 
 ### make cube
-cp /home/sprabu/customPython/makeCube.py /nvmetmp 
-myPython ./makeCube.py --obs ${obsnum} --noradid ${norad}
+#cp /astro/mwasci/sprabu/path/PawseyPathFiles/makeCube_v2.py /nvmetmp 
+#myPython3 ./makeCube_v2.py --obs ${obsnum} --noradid ${norad} --channels 768 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
+ 
+cp /astro/mwasci/sprabu/path/PawseyPathFiles/makeCube_v3.py /nvmetmp
+myPython3 ./makeCube_v3.py --obs ${obsnum} --noradid ${norad} --channels 768 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
+
 
 ### copy data over back to /astro
 cp *.npy ${datadir}/${norad}
 cp 6S*.fits ${datadir}/${norad}
 cp *.csv ${datadir}/${norad}
 cp *.png ${datadir}/${norad}
+cp *.txt ${datadir}/${norad}
 #cp *dirty.fits ${datadir}/${norad}
 
 

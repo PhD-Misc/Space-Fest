@@ -48,13 +48,13 @@ datadir=${base}processing/${obsnum}
 
 cd ${datadir}
 
-applysolutions ${obsnum}068-079.ms ${band1Path}
+applysolutions ${obsnum}_068-079.ms ${band1Path}
 
-applysolutions ${obsnum}107-108.ms ${band2Path}
+applysolutions ${obsnum}_107-108.ms ${band2Path}
 
-applysolutions ${obsnum}112-114.ms ${band3Path}
+applysolutions ${obsnum}_112-114.ms ${band3Path}
 
-applysolutions ${obsnum}147-153.ms ${band4Path}
+applysolutions ${obsnum}_147-153.ms ${band4Path}
 
 
 

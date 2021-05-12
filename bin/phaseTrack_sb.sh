@@ -1,32 +1,30 @@
 #!/bin/bash -l
 #SBATCH --export=NONE
 #SBATCH -p workq
-#SBATCH --time=12:00:00
-#SBATCH --ntasks=28
+#SBATCH --time=8:00:00
+#SBATCH --ntasks=20
 #SBATCH --mem=124GB
-#SBATCH --tmp=890GB
+#SBATCH --tmp=450GB
 #SBATCH --mail-type FAIL,TIME_LIMIT,TIME_LIMIT_90
 #SBATCH --mail-user sirmcmissile47@gmail.com
-
 
 start=`date +%s`
 module load singularity
 shopt -s expand_aliases
 source /astro/mwasci/sprabu/aliases
 
-b1name="068-079"
-b2name="107-108"
-b3name="112-114"
-b4name="147-153"
-img_size=200
-img_scale="5amin"
+
+b1name="_068-079"
+b2name="_107-108"
+b3name="_112-114"
+b4name="_147-153"
 set -x
 {
+
 
 obsnum=OBSNUM
 base=BASE
 norad=NORAD
-
 
 datadir=${base}processing/${obsnum}
 cd ${datadir}
@@ -36,22 +34,22 @@ then
     rm -r ${norad}
 fi
 
+
+### run in band 1
 mkdir ${norad}
-
-
-### fm band ###
+mkdir ${norad}/fm
 cp -r ${obsnum}${b1name}.ms /nvmetmp
 cp ${obsnum}.metafits /nvmetmp
 
 cd /nvmetmp
 
 ### run track.py
-cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} 
+cp /astro/mwasci/sprabu/path/PawseyPathFiles/track.py /nvmetmp
+myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### make images along phase
 tarray=
-while IFS=, read -r col1 col2 col3 col4 col5
+while IFS=, read -r col1 col2 col3 col4 col5 col6
 do
     ah=$((col1))
     bh=$((ah+1))
@@ -63,12 +61,12 @@ do
     chgcentre ${obsnum}${b1name}.ms ${col2} ${col3}
 
     mkdir Head
-    wsclean -name ${obsnum}${b1name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b1name}.ms &
+    wsclean -name ${obsnum}-2m-${col1}h -size 200 200 -scale 5amin -interval ${ah} ${bh} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Head -quiet -maxuvw-m ${col4} -use-wgridder ${obsnum}${b1name}.ms &
 
     PID1=$!
 
     mkdir Tail
-    wsclean -name ${obsnum}${b1name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b1name}.ms & 
+    wsclean -name ${obsnum}-2m-${col1}t -size 200 200 -scale 5amin -interval ${at} ${bt} -channels-out 384 -weight natural -abs-mem 40 -temp-dir Tail -quiet -maxuvw-m ${col4} -use-wgridder ${obsnum}${b1name}.ms & 
 
     PID2=$!
 
@@ -84,23 +82,16 @@ done < ${obsnum}-${norad}.csv
 
 ## run rfiseeker
 cp /home/sprabu/RFISeeker/RFISeekerSpaceFest /nvmetmp
-#while IFS=, read -r col1 col2 col3 col4
-#do
-#    while [[ $(jobs | wc -l) -ge 28 ]]
-#    do
-#        wait -n $(jobs -p)
-#    done
+
 for col1 in "${tarray[@]}"
 do
     while [[ $(jobs | wc -l) -ge 28 ]]
     do
         wait -n $(jobs -p)
     done
+    python_rfi ./RFISeekerSpaceFest --obs ${obsnum} --freqChannels 384 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize 200 --timeStep ${col1} &
 
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b1name} --freqChannels 384 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
-
-done  
-#done < ${obsnum}-${norad}.csv
+done
 
 i=0
 for job in `jobs -p`
@@ -112,6 +103,7 @@ for pid in ${pids[*]}; do
     wait ${pid}
 done
 
+
 ## run timeLapse.py
 ## get min max timestep values
 max=${tarray[0]}
@@ -121,325 +113,19 @@ for i in "${tarray[@]}"; do
   (( i > max )) && max=$i
   (( i < min )) && min=$i
 done
-cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
-myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
+cp /astro/mwasci/sprabu/path/PawseyPathFiles/TrackTimeLapse.py /nvmetmp
+myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill
 
-### make cube
-cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
-myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b1name} --noradid ${norad} --channels 384 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
+## make cube
+cp /astro/mwasci/sprabu/path/PawseyPathFiles/makeCube_v3.py /nvmetmp
+myPython3 ./makeCube_v3.py --obs ${obsnum} --noradid ${norad} --channels 384 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
 
 ### copy data over back to /astro
-mkdir ${datadir}/${norad}/fm
 cp *.npy ${datadir}/${norad}/fm
 cp 6S*.fits ${datadir}/${norad}/fm
 cp *.csv ${datadir}/${norad}/fm
 cp *.png ${datadir}/${norad}/fm
-
-#for ((i = 0 ; i < 10 ; i ++ ));
-#do
-#    cp *${i}-dirty.fits ${datadir}/${norad}/fm
-#done
-
-
-rm -r *
-
-#### end of fm band run
-
-### run data in orbcomm band
-cd ${datadir}
-cp -r ${obsnum}${b2name}.ms /nvmetmp
-cp ${obsnum}.metafits /nvmetmp
-cd /nvmetmp
-
-### run track.py
-cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
-
-### make images along phase
-tarray=
-while IFS=, read -r col1 col2 col3 col4 col5
-do
-    ah=$((col1))
-    bh=$((ah+1))
-    bt=$((col1))
-    at=$((bt-1))
-    tarray=(${tarray[@]} ${col1})
-    echo ${tarray}
-    echo ${tarray[@]}
-    chgcentre ${obsnum}${b2name}.ms ${col2} ${col3}
-
-    mkdir Head
-    wsclean -name ${obsnum}${b2name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 64 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b2name}.ms &
-
-    PID1=$!
-
-    mkdir Tail
-    wsclean -name ${obsnum}${b2name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 64 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b2name}.ms & 
-
-    PID2=$!
-
-
-
-    wait ${PID1}    
-    wait ${PID2}
-    
-    rm -r Head
-    rm -r Tail
-   
-done < ${obsnum}-${norad}.csv
-
-## run rfiseeker
-cp /home/sprabu/RFISeeker/RFISeekerSpaceFest /nvmetmp
-#while IFS=, read -r col1 col2 col3 col4
-#do
-#    while [[ $(jobs | wc -l) -ge 28 ]]
-#    do
-#        wait -n $(jobs -p)
-#    done
-
-for col1 in "${tarray[@]}"
-do
-    while [[ $(jobs | wc -l) -ge 28 ]]
-    do
-        wait -n $(jobs -p)
-    done
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b2name} --freqChannels 64 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
-   
-done
-
-i=0
-for job in `jobs -p`
-do
-    pids[${i}]=${job}
-    i=$((i+1))
-done
-for pid in ${pids[*]}; do
-    wait ${pid}
-done
-
-## run timeLapse.py
-## get min max timestep values
-max=${tarray[0]}
-min=${tarray[0]}
-
-for i in "${tarray[@]}"; do
-  (( i > max )) && max=$i
-  (( i < min )) && min=$i
-done
-cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
-myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
-
-### make cube
-cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
-myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b2name} --noradid ${norad} --channels 64 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
-
-### copy data over back to /astro
-mkdir ${datadir}/${norad}/orb
-cp *.npy ${datadir}/${norad}/orb
-cp 6S*.fits ${datadir}/${norad}/orb
-cp *.csv ${datadir}/${norad}/orb
-cp *.png ${datadir}/${norad}/orb
-rm -r *
-### end of orbcomm band
-
-
-### start of dl band
-cd ${datadir}
-cp -r ${obsnum}${b3name}.ms /nvmetmp
-cp ${obsnum}.metafits /nvmetmp
-cd /nvmetmp
-
-### run track.py
-cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
-
-### make images along phase
-tarray=
-while IFS=, read -r col1 col2 col3 col4 col5
-do
-    ah=$((col1))
-    bh=$((ah+1))
-    bt=$((col1))
-    at=$((bt-1))
-    tarray=(${tarray[@]} ${col1})
-    echo ${tarray}
-    echo ${tarray[@]}
-    chgcentre ${obsnum}${b3name}.ms ${col2} ${col3}
-
-    mkdir Head
-    wsclean -name ${obsnum}${b3name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 96 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b3name}.ms &
-
-    PID1=$!
-
-    mkdir Tail
-    wsclean -name ${obsnum}${b3name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 96 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b3name}.ms & 
-
-    PID2=$!
-
-
-
-    wait ${PID1}    
-    wait ${PID2}
-    
-    rm -r Head
-    rm -r Tail
-   
-done < ${obsnum}-${norad}.csv
-
-## run rfiseeker
-cp /home/sprabu/RFISeeker/RFISeekerSpaceFest /nvmetmp
-#while IFS=, read -r col1 col2 col3 col4
-#do
-#    while [[ $(jobs | wc -l) -ge 28 ]]
-#    do
-#        wait -n $(jobs -p)
-#    done
-for col1 in "${tarray[@]}"
-do
-    while [[ $(jobs | wc -l) -ge 28 ]]
-    do
-        wait -n $(jobs -p)
-    done
-
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b3name} --freqChannels 96 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
-   
-done
-
-i=0
-for job in `jobs -p`
-do
-    pids[${i}]=${job}
-    i=$((i+1))
-done
-for pid in ${pids[*]}; do
-    wait ${pid}
-done
-
-## run timeLapse.py
-## get min max timestep values
-max=${tarray[0]}
-min=${tarray[0]}
-
-for i in "${tarray[@]}"; do
-  (( i > max )) && max=$i
-  (( i < min )) && min=$i
-done
-cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
-myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
-
-### make cube
-cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
-myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b3name} --noradid ${norad} --channels 96 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
-
-### copy data over back to /astro
-mkdir ${datadir}/${norad}/dl
-cp *.npy ${datadir}/${norad}/dl
-cp 6S*.fits ${datadir}/${norad}/dl
-cp *.csv ${datadir}/${norad}/dl
-cp *.png ${datadir}/${norad}/dl
-rm -r *
-### end of dl band
-
-
-### start of dtv band
-cd ${datadir}
-cp -r ${obsnum}${b4name}.ms /nvmetmp
-cp ${obsnum}.metafits /nvmetmp
-cd /nvmetmp
-
-### run track.py
-cp /home/sprabu/customPython/track.py /nvmetmp
-myPython ./track.py --obs ${obsnum} --metafits ${datadir}/${obsnum}.metafits --noradid ${norad} --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
-
-### make images along phase
-tarray=
-while IFS=, read -r col1 col2 col3 col4 col5
-do
-    ah=$((col1))
-    bh=$((ah+1))
-    bt=$((col1))
-    at=$((bt-1))
-    tarray=(${tarray[@]} ${col1})
-    echo ${tarray}
-    echo ${tarray[@]}
-    chgcentre ${obsnum}${b4name}.ms ${col2} ${col3}
-
-    mkdir Head
-    wsclean -name ${obsnum}${b4name}-2m-${col1}h -size ${img_size} ${img_size} -scale ${img_scale} -interval ${ah} ${bh} -channels-out 1 -weight natural -abs-mem 40 -temp-dir Head -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b4name}.ms &
-
-    PID1=$!
-
-    mkdir Tail
-    wsclean -name ${obsnum}${b4name}-2m-${col1}t -size ${img_size} ${img_size} -scale ${img_scale} -interval ${at} ${bt} -channels-out 1 -weight natural -abs-mem 40 -temp-dir Tail -quiet -use-wgridder -maxuvw-m ${col4} ${obsnum}${b4name}.ms & 
-
-    PID2=$!
-
-
-
-    wait ${PID1}    
-    wait ${PID2}
-    
-    rm -r Head
-    rm -r Tail
-   
-done < ${obsnum}-${norad}.csv
-
-## run rfiseeker
-cp /home/sprabu/RFISeeker/RFISeekerSpaceFest /nvmetmp
-#while IFS=, read -r col1 col2 col3 col4
-#do
-#    while [[ $(jobs | wc -l) -ge 28 ]]
-#    do
-#        wait -n $(jobs -p)
-#    done
-for col1 in "${tarray[@]}"
-do
-    while [[ $(jobs | wc -l) -ge 28 ]]
-    do
-        wait -n $(jobs -p)
-    done
-
-    python_rfi ./RFISeekerSpaceFest --obs ${obsnum}${b4name} --freqChannels 1 --seedSigma 6 --floodfillSigma 1 --prefix 6Sigma1Floodfill --DSNRS=False --imgSize ${img_size} --timeStep ${col1} &
-   
-done
-
-i=0
-for job in `jobs -p`
-do
-    pids[${i}]=${job}
-    i=$((i+1))
-done
-for pid in ${pids[*]}; do
-    wait ${pid}
-done
-
-## run timeLapse.py
-## get min max timestep values
-max=${tarray[0]}
-min=${tarray[0]}
-
-for i in "${tarray[@]}"; do
-  (( i > max )) && max=$i
-  (( i < min )) && min=$i
-done
-cp /home/sprabu/customPython/TrackTimeLapse.py /nvmetmp
-myPython ./TrackTimeLapse.py --obs ${obsnum} --noradid ${norad} --t1 ${min} --t2 ${max} --user ${spaceTrackUser} --passwd ${spaceTrackPassword} --prefix 6Sigma1Floodfill 
-
-### make cube
-cp /home/sprabu/customPython/makeCube_v2.py /nvmetmp 
-myPython3 ./makeCube_v2.py --obs ${obsnum} --band ${b4name} --noradid ${norad} --channels 96 --user ${spaceTrackUser} --passwd ${spaceTrackPassword}
-
-### copy data over back to /astro
-mkdir ${datadir}/${norad}/dtv
-cp *.npy ${datadir}/${norad}/dtv
-cp 6S*.fits ${datadir}/${norad}/dtv
-cp *.csv ${datadir}/${norad}/dtv
-cp *.png ${datadir}/${norad}/dtv
-cp *dirty.fits ${datadir}/${norad}/dtv
-### end of dtv band
-
-
 
 end=`date +%s`
 runtime=$((end-start))
