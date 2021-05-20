@@ -1,7 +1,7 @@
 #! /bin/bash -l
 #SBATCH --export=NONE
 #SBATCH -p workq
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #SBATCH --ntasks=28
 #SBATCH --mem=124GB
 #SBATCH -J rfiseeker
@@ -20,7 +20,7 @@ set -x
 
 obsnum=OBSNUM
 base=BASE
-timeSteps=
+timeSteps=55
 
 while getopts 's:' OPTION
 do
@@ -45,7 +45,7 @@ do
   do
     wait -n $(jobs -p)
   done
-  myPython_rfi ./RFISeeker --obs ${obsnum} --freqChannels 768 --seedSigma 6 --floodfillSigma 3 --timeStep ${q} --prefix 6Sigma3Floodfill --DSNRS=False --imgSize 1400 &
+  python_rfi ./RFISeeker --obs ${obsnum} --freqChannels 768 --seedSigma 6 --floodfillSigma 3 --timeStep ${q} --prefix 6Sigma3Floodfill --DSNRS=False --imgSize 1400 &
 
 done
 

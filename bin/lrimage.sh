@@ -52,7 +52,7 @@ do
 		mkdir temp_${g}_${f1}
 		name=`printf %04d $f`
 		wsclean -quiet -name ${obsnum}-2m-${i}-${name} -size 1400 1400 -temp-dir temp_${g}_${f} \
-		-abs-mem 5 -interval ${i} ${j} -channel-range ${f1} ${f2} -weight natural -scale 2.5amin\
+		-abs-mem 5 -interval ${i} ${j} -channel-range ${f1} ${f2} -weight natural -scale 5amin\
 		 -use-wgridder ${obsnum}.ms &
 
 
